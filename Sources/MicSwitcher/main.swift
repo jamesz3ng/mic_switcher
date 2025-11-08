@@ -1,12 +1,10 @@
-import Foundation
-import CoreAudio
+import Cocoa
 
-print("🎤 MicSwitcher started - monitoring audio device changes...")
-print("This utility will automatically switch input to built-in microphone when Bluetooth headphones connect.")
-print("Press Ctrl+C to quit.\n")
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
 
-let monitor = DeviceMonitor()
-monitor.start()
+// Hide from dock and make it a menu bar only app
+app.setActivationPolicy(.accessory)
 
-// Keep the program running
-RunLoop.main.run()
+app.run()

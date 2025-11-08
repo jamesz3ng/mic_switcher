@@ -1,6 +1,6 @@
 # MicSwitcher 🎤
 
-A macOS utility that automatically switches your audio input to the built-in microphone when Bluetooth headphones connect.
+A macOS menu bar app that automatically switches your audio input to the built-in microphone when Bluetooth headphones connect, with intelligent screen detection.
 
 ## The Problem
 
@@ -11,8 +11,10 @@ When you connect Bluetooth headphones to macOS, the system automatically sets th
 - 🎯 Automatically detects when Bluetooth headphones become the input device
 - 🔄 Instantly switches input back to built-in microphone
 - 📊 Monitors audio device changes in real-time
-- 🚀 Runs silently in the background
-- 💻 Native Swift implementation using Core Audio APIs
+- 🖥️ Detects screen wake/sleep events for intelligent switching
+- 🎚️ Menu bar controls for manual switching and toggling auto-switch
+- 🚀 Runs silently in the menu bar
+- 💻 Native Swift implementation using Core Audio and Cocoa APIs
 
 ## Requirements
 
@@ -21,61 +23,50 @@ When you connect Bluetooth headphones to macOS, the system automatically sets th
 
 ## Installation
 
-### Step 1: Build the Utility
+### Quick Install
 
 ```bash
-# Clone the repository (if you haven't already)
-cd mic_switcher
+# Build and install the app
+make install
+```
 
-# Build the project
+This will:
+1. Build the application
+2. Create a .app bundle
+3. Install it to `/Applications/MicSwitcher.app`
+
+### Manual Build Steps
+
+If you prefer to build manually:
+
+```bash
+# Build the executable
 swift build -c release
 
-# The executable will be at: .build/release/mic-switcher
+# Create the app bundle
+make app
+
+# The app bundle will be at: .build/release/MicSwitcher.app
 ```
 
-### Step 2: Install the Executable
+### Step 2: Launch the App
 
 ```bash
-# Create a bin directory in your home folder (if it doesn't exist)
-mkdir -p ~/bin
+# Open the app
+open /Applications/MicSwitcher.app
 
-# Copy the executable
-cp .build/release/mic-switcher ~/bin/
-
-# Make it executable
-chmod +x ~/bin/mic-switcher
+# Or use Spotlight: Cmd+Space, type "MicSwitcher"
 ```
 
-### Step 3: Test It Manually
+You should see a microphone icon appear in your menu bar!
 
-```bash
-# Run the utility
-~/bin/mic-switcher
-```
-
-You should see output like:
-```
-🎤 MicSwitcher started - monitoring audio device changes...
-Available input devices:
-  - MacBook Pro Microphone (Built-in) [CURRENT]
-  - AirPods Pro (Bluetooth)
-✓ Found built-in microphone: MacBook Pro Microphone
-✓ Monitoring for input device changes...
-```
-
-Try connecting your Bluetooth headphones, and you should see it automatically switch!
-
-### Step 4: Set Up Automatic Startup (Optional)
+### Step 3: Set Up Automatic Startup (Optional)
 
 To have MicSwitcher start automatically when you log in:
 
 ```bash
 # Copy the LaunchAgent plist
 cp com.user.micswitcher.plist ~/Library/LaunchAgents/
-
-# Update the path in the plist to match your username
-# Edit ~/Library/LaunchAgents/com.user.micswitcher.plist
-# Replace /Users/YOUR_USERNAME with your actual home directory path
 
 # Load the LaunchAgent
 launchctl load ~/Library/LaunchAgents/com.user.micswitcher.plist
@@ -84,49 +75,62 @@ launchctl load ~/Library/LaunchAgents/com.user.micswitcher.plist
 # launchctl unload ~/Library/LaunchAgents/com.user.micswitcher.plist
 ```
 
+Or simply add MicSwitcher to your Login Items in System Settings > General > Login Items.
+
 ## Usage
 
-### Running Manually
+### Menu Bar Controls
 
-```bash
-~/bin/mic-switcher
-```
+Click the microphone icon in your menu bar to access:
 
-Press `Ctrl+C` to stop.
+- **Enable/Disable Auto-Switch** (⌘T): Toggle automatic switching on/off
+- **Switch to Built-in Mic Now** (⌘S): Manually switch to built-in microphone
+- **Current Device**: Shows your current input device
+- **Quit** (⌘Q): Close the application
 
-### Running as Background Service
+### Automatic Behavior
 
-Once you've set up the LaunchAgent (Step 4 above), the utility will:
-- Start automatically when you log in
-- Run in the background
-- Log output to `~/Library/Logs/MicSwitcher.log`
+The app will:
+- Monitor audio device changes in real-time
+- Automatically switch to built-in mic when Bluetooth headphones become the input device
+- Re-check and switch when your screen wakes up (in case devices changed while asleep)
+- Continue running silently in the menu bar
 
-### Checking Logs
+### Screen Detection
 
-```bash
-tail -f ~/Library/Logs/MicSwitcher.log
-```
+MicSwitcher monitors screen wake/sleep events:
+- When your screen wakes up, it checks if a Bluetooth device is the current input and switches if needed
+- This ensures you always have the built-in mic active after waking from sleep
 
 ## How It Works
 
-1. **Monitoring**: The utility uses Core Audio APIs to monitor changes to the default input device
-2. **Detection**: When a change is detected, it checks if the new input device is a Bluetooth device
-3. **Switching**: If a Bluetooth input is detected, it immediately switches to the built-in microphone
-4. **Real-time**: All of this happens instantly and automatically
+1. **Menu Bar App**: Runs as a native macOS menu bar application (LSUIElement)
+2. **Device Monitoring**: Uses Core Audio APIs to monitor changes to the default input device
+3. **Detection**: When a change is detected, it checks if the new input device is a Bluetooth device
+4. **Switching**: If a Bluetooth input is detected, it immediately switches to the built-in microphone
+5. **Screen Monitoring**: Uses NSWorkspace notifications to detect screen wake/sleep events
+6. **Smart Recovery**: When screen wakes, re-checks and switches if needed
+7. **Real-time**: All of this happens instantly and automatically
 
 ## Technical Details
 
-- Written in Swift using Core Audio framework
+- Written in Swift using Core Audio and Cocoa frameworks
 - Uses `AudioObjectPropertyListenerBlock` for real-time device change notifications
+- Uses `NSWorkspace.screensDidWakeNotification` and `NSWorkspace.screensDidSleepNotification` for screen state detection
 - Queries device properties to identify transport types (Built-in, Bluetooth, USB, etc.)
 - Minimal CPU usage - only responds to system events
+- Menu bar only app (doesn't appear in Dock)
 
 ## Troubleshooting
 
-### "Permission Denied" Error
-Make sure the executable has the right permissions:
+### App Not Appearing in Menu Bar
+Make sure the app is running:
 ```bash
-chmod +x ~/bin/mic-switcher
+# Check if it's running
+ps aux | grep MicSwitcher
+
+# Try launching it
+open /Applications/MicSwitcher.app
 ```
 
 ### LaunchAgent Not Starting
@@ -135,26 +139,35 @@ Check if it's loaded:
 launchctl list | grep micswitcher
 ```
 
-View logs:
+If not loaded, load it:
 ```bash
-cat ~/Library/Logs/MicSwitcher.log
+launchctl load ~/Library/LaunchAgents/com.user.micswitcher.plist
 ```
 
 ### Not Detecting Bluetooth Devices
-The utility identifies devices by their transport type. If your Bluetooth headphones aren't being detected, run the utility manually and check the device list it prints at startup.
+The app identifies devices by their transport type. You can check the current device from the menu bar. If your Bluetooth headphones aren't being detected as Bluetooth devices, please open an issue.
+
+### Menu Bar Icon Not Showing
+If the menu bar icon doesn't appear, make sure:
+1. The app has the right permissions in System Settings > Privacy & Security
+2. You're running macOS 11.0 or later
+3. Try restarting the app
 
 ## Uninstalling
 
 ```bash
+# Use the make uninstall command
+make uninstall
+```
+
+Or manually:
+```bash
 # Stop and remove the LaunchAgent
-launchctl unload ~/Library/LaunchAgents/com.user.micswitcher.plist
+launchctl unload ~/Library/LaunchAgents/com.user.micswitcher.plist 2>/dev/null
 rm ~/Library/LaunchAgents/com.user.micswitcher.plist
 
-# Remove the executable
-rm ~/bin/mic-switcher
-
-# Remove logs
-rm ~/Library/Logs/MicSwitcher.log
+# Remove the app
+rm -rf /Applications/MicSwitcher.app
 ```
 
 ## Contributing
