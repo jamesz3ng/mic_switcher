@@ -4,13 +4,62 @@ import CoreAudio
 class DeviceMonitor {
     private let audioManager = AudioDeviceManager()
     private var listenerBlock: AudioObjectPropertyListenerBlock?
+    private var isMonitoring = false
 
     func start() {
+        guard !isMonitoring else { return }
+
         // List current devices
         listCurrentDevices()
 
         // Set up listener for default input device changes
         setupDefaultInputDeviceListener()
+
+        isMonitoring = true
+    }
+
+    func stop() {
+        guard isMonitoring else { return }
+
+        // Remove listener
+        if listenerBlock != nil {
+            var propertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            AudioObjectRemovePropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &propertyAddress,
+                DispatchQueue.main,
+                listenerBlock!
+            )
+
+            listenerBlock = nil
+        }
+
+        isMonitoring = false
+        print("Device monitoring stopped")
+    }
+
+    func getCurrentInputDevice() -> AudioDeviceManager.AudioDevice? {
+        return audioManager.getDefaultInputDevice()
+    }
+
+    func manualSwitchToBuiltIn() {
+        switchToBuiltInMicrophone()
+    }
+
+    func checkAndSwitchIfNeeded() {
+        guard let currentInputDevice = audioManager.getDefaultInputDevice() else {
+            return
+        }
+
+        // If current input is Bluetooth, switch to built-in
+        if currentInputDevice.isBluetoothInput {
+            switchToBuiltInMicrophone()
+        }
     }
 
     private func listCurrentDevices() {
