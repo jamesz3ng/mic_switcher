@@ -7,6 +7,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var isEnabled: Bool = true
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Hide from dock and make it a menu bar only app
+        NSApp.setActivationPolicy(.accessory)
+
         // Create status bar item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 

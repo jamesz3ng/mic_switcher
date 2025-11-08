@@ -1,10 +1,11 @@
 import Cocoa
 
+// Create the shared application instance
 let app = NSApplication.shared
+
+// Create and set the delegate
 let delegate = AppDelegate()
 app.delegate = delegate
 
-// Hide from dock and make it a menu bar only app
-app.setActivationPolicy(.accessory)
-
-app.run()
+// Activate the app and run
+_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
